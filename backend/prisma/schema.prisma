@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(cuid())
+  email             String             @unique
+  name              String
+  username          String             @unique
+  timezone          String             @default("America/New_York")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  eventTypes        EventType[]
+  availabilitySchedules AvailabilitySchedule[]
+  bookings          Booking[]
+}
+
+model EventType {
+  id                String             @id @default(cuid())
+  title             String
+  slug              String
+  description       String?
+  duration          Int                // in minutes
+  color             String             @default("#3B82F6")
+  isActive          Boolean            @default(true)
+  requiresConfirmation Boolean         @default(false)
+  bufferTimeBefore  Int                @default(0) // minutes
+  bufferTimeAfter   Int                @default(0) // minutes
+  minimumNotice     Int                @default(60) // minutes
+  slotInterval      Int?               // if different from duration
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  scheduleId        String?
+  schedule          AvailabilitySchedule? @relation(fields: [scheduleId], references: [id])
+  
+  bookings          Booking[]
+  customQuestions   CustomQuestion[]
+  
+  @@unique([userId, slug])
+  @@index([userId])
+  @@index([slug])
+}
+
+model AvailabilitySchedule {
+  id                String             @id @default(cuid())
+  name              String
+  isDefault         Boolean            @default(false)
+  timezone          String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  weeklyHours       WeeklyHours[]
+  dateOverrides     DateOverride[]
+  eventTypes        EventType[]
+  
+  @@index([userId])
+}
+
+model WeeklyHours {
+  id                String             @id @default(cuid())
+  dayOfWeek         Int                // 0 = Sunday, 6 = Saturday
+  startTime         String             // "09:00"
+  endTime           String             // "17:00"
+  isEnabled         Boolean            @default(true)
+  
+  scheduleId        String
+  schedule          AvailabilitySchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  
+  @@index([scheduleId])
+}
+
+model DateOverride {
+  id                String             @id @default(cuid())
+  date              DateTime           @db.Date
+  isBlocked         Boolean            @default(false)
+  startTime         String?            // null if blocked
+  endTime           String?            // null if blocked
+  
+  scheduleId        String
+  schedule          AvailabilitySchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  
+  @@unique([scheduleId, date])
+  @@index([scheduleId])
+}
+
+model Booking {
+  id                String             @id @default(cuid())
+  uid               String             @unique @default(cuid())
+  title             String
+  description       String?
+  startTime         DateTime
+  endTime           DateTime
+  status            BookingStatus      @default(PENDING)
+  bookerName        String
+  bookerEmail       String
+  bookerTimezone    String
+  notes             String?
+  cancellationReason String?
+  rescheduledFromId String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  eventTypeId       String
+  eventType         EventType          @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  responses         BookingResponse[]
+  
+  @@index([userId])
+  @@index([eventTypeId])
+  @@index([startTime])
+  @@index([status])
+}
+
+model CustomQuestion {
+  id                String             @id @default(cuid())
+  question          String
+  type              QuestionType       @default(TEXT)
+  isRequired        Boolean            @default(false)
+  options           Json               // for SELECT/MULTISELECT types
+  order             Int                @default(0)
+  
+  eventTypeId       String
+  eventType         EventType          @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  
+  responses         BookingResponse[]
+  
+  @@index([eventTypeId])
+}
+
+model BookingResponse {
+  id                String             @id @default(cuid())
+  answer            String
+  
+  bookingId         String
+  booking           Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  questionId        String
+  question          CustomQuestion     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  @@unique([bookingId, questionId])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  RESCHEDULED
+  COMPLETED
+}
+
+enum QuestionType {
+  TEXT
+  TEXTAREA
+  SELECT
+  MULTISELECT
+  PHONE
+  CHECKBOX
+}
