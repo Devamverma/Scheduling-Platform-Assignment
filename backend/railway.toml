@@ -1,0 +1,19 @@
+# Railway deployment configuration for backend
+# This file is optional but helps with deployment configuration
+
+# Build configuration
+[build]
+builder = "nixpacks"
+
+# Environment setup
+[env]
+NODE_ENV = "production"
+PORT = "3001"
+
+# Start command
+[start]
+cmd = "npm start"
+
+# Requires Node 16+
+[nixpacks]
+providers = ["node"]
