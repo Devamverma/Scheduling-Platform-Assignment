@@ -1,0 +1,72 @@
+# Netlify build and deployment configuration
+
+[build]
+# Command to build the frontend
+command = "npm run build"
+# Directory that contains the deployable content
+publish = "build"
+# Base directory for the build
+base = "frontend"
+
+[build.environment]
+# React environment variables must start with REACT_APP_
+REACT_APP_API_URL = "https://yourdomain-production.up.railway.app/api"
+# Increase Node memory to prevent timeouts
+NODE_OPTIONS = "--max-old-space-size=4096"
+
+# Redirect all routes to index.html for React Router SPA
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+# Enable gzip compression
+[build.processing]
+skip_processing = false
+
+# Cache build artifacts
+[build.cache]
+cache_dependencies = true
+
+# Configure headers for security and performance
+[[headers]]
+for = "/*"
+[headers.values]
+# Prevent clickjacking
+X-Frame-Options = "DENY"
+# Enable XSS protection
+X-XSS-Protection = "1; mode=block"
+# Prevent MIME sniffing
+X-Content-Type-Options = "nosniff"
+# Enable strict transport security (HTTPS only for 1 year)
+Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+# Referrer policy
+Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache HTML files for 1 hour
+[[headers]]
+for = "/*.html"
+[headers.values]
+Cache-Control = "public, max-age=3600"
+
+# Cache static assets for 1 year
+[[headers]]
+for = "/static/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache JavaScript and CSS for 1 month
+[[headers]]
+for = "/*.js"
+[headers.values]
+Cache-Control = "public, max-age=2592000"
+
+[[headers]]
+for = "/*.css"
+[headers.values]
+Cache-Control = "public, max-age=2592000"
+
+# Development configuration
+[dev]
+command = "npm start"
+port = 3000
