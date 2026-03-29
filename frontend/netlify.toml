@@ -10,7 +10,7 @@ base = "frontend"
 
 [build.environment]
 # React environment variables must start with REACT_APP_
-REACT_APP_API_URL = "https://yourdomain-production.up.railway.app/api"
+REACT_APP_API_URL = "https://scheduling-platform-assignment-production.up.railway.app/api"
 # Increase Node memory to prevent timeouts
 NODE_OPTIONS = "--max-old-space-size=4096"
 
